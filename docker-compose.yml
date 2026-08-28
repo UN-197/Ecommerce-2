@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: company_db
+      POSTGRES_USER: company_user
+      POSTGRES_PASSWORD: company_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - company_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - company_network
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - USERS_SERVICE_URL=http://users-service:3002
+      - PRODUCTS_SERVICE_URL=http://products-service:3003
+      - ORDERS_SERVICE_URL=http://orders-service:3004
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - auth-service
+      - users-service
+      - products-service
+      - orders-service
+      - redis
+    networks:
+      - company_network
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://company_user:company_pass@postgres:5432/company_db
+      - JWT_SECRET=super-secret-key-123
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - company_network
+
+  users-service:
+    build: ./users-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://company_user:company_pass@postgres:5432/company_db
+      - JWT_SECRET=super-secret-key-123
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - company_network
+
+  products-service:
+    build: ./products-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://company_user:company_pass@postgres:5432/company_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - company_network
+
+  orders-service:
+    build: ./orders-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://company_user:company_pass@postgres:5432/company_db
+      - JWT_SECRET=super-secret-key-123
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - company_network
+
+volumes:
+  postgres_data:
+
+networks:
+  company_network:
+    driver: bridge

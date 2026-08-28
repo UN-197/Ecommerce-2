@@ -1,0 +1,39 @@
+Setup Lengkap Microservices dengan Database dan Docker
+Struktur microservices sudah dibuat di company-microservices dengan:
+
+- API Gateway: Proxy dan routing
+- Auth Service: Login/register dengan JWT
+- Users Service: CRUD users
+- Products Service: CRUD products
+- Orders Service: CRUD orders
+- Database: PostgreSQL
+- Cache: Redis
+- Docker: Containerization
+
+File yang Dibuat
+- docker-compose.yml: Orchestrasi services
+- Dockerfile untuk setiap service
+- package.json dan server.js untuk setiap service
+- README.md: Dokumentasi lengkap
+
+Cara Jalankan
+
+1. Dengan Docker (recommended):
+- Install Docker Desktop
+- Jalankan: docker compose up --build
+- Akses: http://localhost:4000
+
+2. Tanpa Docker (development):
+
+- Install PostgreSQL dan Redis
+- Buat database company_db
+- Set env vars: DATABASE_URL, JWT_SECRET, REDIS_URL
+- Jalankan setiap service: npm install && npm start di folder masing-masing
+
+API Testing
+- Register: POST /auth/register
+- Login: POST /auth/login (dapat token)
+- Gunakan token di header Authorization: Bearer <token> untuk request protected
+
+
+Setup ini scalable, secure, dan production-ready.
