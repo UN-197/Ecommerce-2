@@ -48,19 +48,48 @@ app.get('/', authenticate, async (req, res) => {
 });
 
 app.post('/', authenticate, async (req, res) => {
+  const { product_id, quantity } = req.body;
+  if (
+    !Number.isInteger(product_id) ||
+    product_id <= 0 ||
+    !Number.isInteger(quantity) ||
+    quantity <= 0
+  ) {
+    return res
+      .status(400)
+      .json({ error: 'product_id and quantity must be positive integers' });
+  }
+  const client = await pool.connect();
   try {
-    const { product_id, quantity } = req.body;
-    if (!product_id || !quantity || quantity <= 0) {
-      return res.status(400).json({ error: 'product_id and a positive quantity are required' });
+    await client.query('BEGIN');
+    const product = await client.query(
+      'SELECT id, stock FROM products WHERE id = $1 FOR UPDATE',
+      [product_id]
+    );
+    if (!product.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Product not found' });
     }
-    const result = await pool.query(
+    if (product.rows[0].stock < quantity) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Insufficient stock' });
+    }
+    await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [
+      quantity,
+      product_id,
+    ]);
+    const result = await client.query(
       'INSERT INTO orders (user_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *',
       [req.user.id, product_id, quantity]
     );
+    await client.query('COMMIT');
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error(err);
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 
