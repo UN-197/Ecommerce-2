@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U company_user -d company_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - company_network
 
@@ -51,8 +56,10 @@ services:
       - JWT_SECRET=super-secret-key-123
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - company_network
 
@@ -66,8 +73,10 @@ services:
       - JWT_SECRET=super-secret-key-123
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - company_network
 
@@ -78,10 +87,13 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://company_user:company_pass@postgres:5432/company_db
+      - JWT_SECRET=super-secret-key-123
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - company_network
 
@@ -95,8 +107,10 @@ services:
       - JWT_SECRET=super-secret-key-123
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - company_network
 
